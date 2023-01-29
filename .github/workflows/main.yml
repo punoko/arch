@@ -7,6 +7,8 @@ jobs:
     name: List dir
     runs-on: ubuntu-latest
     steps:
+      - name: Checkoit
+        uses: actions/checkout@latest
       - name: List dir
         run: |
           pwd
