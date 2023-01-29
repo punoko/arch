@@ -11,8 +11,9 @@ jobs:
       volumes:
         - /dev:/dev
       options:
-        #--cap-add=SYS_ADMIN
-        --privileged
+        cap-add=SYS_ADMIN
+        cap-add=CAP_MKNOD
+        #--privileged
     steps:
       - uses: actions/checkout@v3.3.0
       - name: Run build script
