@@ -6,13 +6,12 @@ jobs:
   list:
     name: List dir
     runs-on: ubuntu-latest
+    container:
+      image: archlinux
     steps:
-      - name: Checkoit
-        uses: actions/checkout@v3.3.0
-      - name: List dir
-        run: |
-          pwd
-          ls -alR
+      - uses: actions/checkout@v3.3.0
+      - run: ls -al
+      - run: head /etc/pacman.conf
 #   build:
 #     name: Build
 #     runs-on: ubuntu-latest
