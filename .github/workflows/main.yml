@@ -1,7 +1,5 @@
 name: Test
-on:
-  push:
-    branches: [ main ]
+on: push
 jobs:
   test:
     name: Test
@@ -11,13 +9,16 @@ jobs:
       volumes:
         - /dev:/dev
       options:
-        --cap-add=SYS_ADMIN
-        --cap-add=MKNOD
-        #--privileged
+        --privileged
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v3
       - name: Run build script
+        # shell: bash
         run: ./build.sh
+      - uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: arch.qcow2
 
 #   build:
 #     name: Build
@@ -27,7 +28,7 @@ jobs:
 
 #       - name: Run build script
 #         run: ./.github/build.sh
-#         shell: bash
+#         
 
 # jobs:
 #   example-job:
