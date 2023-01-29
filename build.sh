@@ -4,7 +4,8 @@ echo "===== pacman ====="
 pacman -Syu --noconfirm arch-install-scripts btrfs-progs
 
 echo "===== truncate ====="
-IMAGE=image.img
+IMAGE="/image.img"
+MOUNT="/mnt"
 truncate -s 2G ${IMAGE}
 
 echo "===== losetup ====="
@@ -14,10 +15,10 @@ echo "===== mkfs ====="
 mkfs.btrfs "${LOOPDEV}"
 
 echo "===== mount ====="
-mount -o autodefrag,compress,noatime "${LOOPDEV}" /mnt
+mount -o autodefrag,compress,noatime "${LOOPDEV}" "${MOUNT}"
 
 echo "===== pacstrap ====="
-pacstrap -cGM /mnt base linux grub cloud-init cloud-guest-utils openssh sudo zsh
+pacstrap -cGM "${MOUNT}" base linux grub cloud-init cloud-guest-utils openssh sudo zsh
 
 echo "===== grub ====="
 arch-chroot "${MOUNT}" /usr/bin/grub-install "${LOOPDEV}"
