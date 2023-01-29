@@ -7,10 +7,6 @@ echo "===== truncate ====="
 IMAGE=image.img
 truncate -s 2G ${IMAGE}
 
-losetup --find
-
-exit 0
-
 echo "===== losetup ====="
 LOOPDEV=$(losetup --find --partscan --show ${IMAGE})
 
