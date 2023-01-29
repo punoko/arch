@@ -1,7 +1,7 @@
 #!/bin/bash
 
 pacman -Syu --noconfirm arch-install-scripts neofetch
-neofetch
+neofetch --bold off
 
 # IMAGE=image.img
 # truncate -s 2G ${IMAGE}
