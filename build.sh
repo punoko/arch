@@ -1,18 +1,27 @@
 #!/bin/bash
 
-pacman -Syu --noconfirm arch-install-scripts neofetch
-neofetch --bold off
+echo "===== pacman ====="
+pacman -Syu --noconfirm arch-install-scripts
 
-# IMAGE=image.img
-# truncate -s 2G ${IMAGE}
-# LOOPDEV=$(losetup --find --partscan --show ${IMAGE})
-# mkfs.btrfs "${LOOPDEV}"
-# mount -o autodefrag,compress,noatime "${LOOPDEV}" /mnt
-# pacstrap -cGM /mnt base linux grub cloud-init cloud-guest-utils zsh sudo openssh 
+echo "===== truncate ====="
+IMAGE=image.img
+truncate -s 2G ${IMAGE}
 
-# #arch-chroot
-# arch-chroot "${MOUNT}" /usr/bin/grub-install "${LOOPDEV}"
-# arch-chroot "${MOUNT}" /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+echo "===== losetup ====="
+LOOPDEV=$(losetup --find --partscan --show ${IMAGE})
+
+echo "===== mkfs ====="
+mkfs.btrfs "${LOOPDEV}"
+
+echo "===== mount ====="
+mount -o autodefrag,compress,noatime "${LOOPDEV}" /mnt
+
+echo "===== pacstrap ====="
+pacstrap -cGM /mnt base linux grub cloud-init cloud-guest-utils openssh sudo zsh
+
+echo "===== grub ====="
+arch-chroot "${MOUNT}" /usr/bin/grub-install "${LOOPDEV}"
+arch-chroot "${MOUNT}" /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
 
 # #add this to cloud init config :
 # bootcmd:
