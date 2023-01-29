@@ -10,6 +10,7 @@ jobs:
       - run: |
           pacman --noconfirm -Syu neofetch
           echo $0
+          modprobe loop
           lsblk
           fdisk -l
           losetup -f
