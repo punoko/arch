@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "===== pacman ====="
-pacman -Syu --noconfirm arch-install-scripts
+pacman -Syu --noconfirm arch-install-scripts btrfs-progs
 
 echo "===== truncate ====="
 IMAGE=image.img
