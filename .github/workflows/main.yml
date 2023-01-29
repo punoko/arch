@@ -10,8 +10,8 @@ jobs:
       - name: List dir
         run: |
           pwd
-          ls -alR
-          ls -alR $HOME
+          ls -al /
+          ls -al $HOME
 #   build:
 #     name: Build
 #     runs-on: ubuntu-latest
