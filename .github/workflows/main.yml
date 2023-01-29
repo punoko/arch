@@ -6,19 +6,23 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux
-      volumes:
-        - /dev:/dev
+#      volumes:
+#        - /dev:/dev
       options:
         --privileged
     steps:
-      - uses: actions/checkout@v3
-      - name: Run build script
-        # shell: bash
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Build script
         run: ./build.sh
-      - uses: actions/upload-artifact@v3
+        # shell: bash
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: my-artifact
+          name: arch.qcow2
           path: arch.qcow2
+          retention-days: 7
+
 
 #   build:
 #     name: Build

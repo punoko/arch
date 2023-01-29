@@ -3,8 +3,11 @@
 IMAGE="image.img"
 OUTPUT="arch.qcow2"
 MOUNT="/mnt"
-PACKAGES=(base btrfs-progs cloud-guest-utils cloud-init grub linux openssh reflector sudo zsh)
+PACKAGES=(base btrfs-progs grub linux openssh reflector sudo zsh)
 SERVICES=(sshd systemd-networkd systemd-resolved systemd-timesyncd systemd-time-wait-sync)
+
+PACKAGES+=(cloud-init cloud-guest-utils)
+SERVICES+=(cloud-init cloud-init-local cloud-config cloud-final)
 
 echo -e "===== pacman ====="
 pacman -Syu --noconfirm --quiet arch-install-scripts btrfs-progs qemu-img
@@ -22,7 +25,7 @@ echo "===== mkfs ====="
 mkfs.btrfs "${LOOPDEV}"
 
 echo "===== mount ====="
-mount -o compress=zstd,noatime "${LOOPDEV}" "${MOUNT}"
+mount -o compress-force=zstd,noatime "${LOOPDEV}" "${MOUNT}"
 
 echo "===== pacstrap ====="
 pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
@@ -31,7 +34,7 @@ echo "===== grub ====="
 arch-chroot "${MOUNT}" /usr/bin/grub-install "${LOOPDEV}"
 sed -i 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=1/' "${MOUNT}/etc/default/grub"
 sed -i 's/^GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="net.ifnames=0"/' "${MOUNT}/etc/default/grub"
-sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=compress=zstd console=tty0 console=ttyS0,115200\"/' "${MOUNT}/etc/default/grub"
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=compress-force=zstd console=tty0 console=ttyS0,115200\"/' "${MOUNT}/etc/default/grub"
 echo 'GRUB_TERMINAL="serial console"' >>"${MOUNT}/etc/default/grub"
 echo 'GRUB_SERIAL_COMMAND="serial --speed=115200"' >>"${MOUNT}/etc/default/grub"
 arch-chroot "${MOUNT}" /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
