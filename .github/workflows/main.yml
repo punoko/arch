@@ -8,13 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkoit
-        uses: actions/checkout@latest
+        uses: actions/checkout@v3.3.0
       - name: List dir
         run: |
           pwd
-          ls -al /
-          ls -al ../
-          ls -al $HOME
+          ls -alR
 #   build:
 #     name: Build
 #     runs-on: ubuntu-latest
