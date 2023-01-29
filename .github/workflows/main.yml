@@ -12,7 +12,7 @@ jobs:
         - /dev:/dev
       options:
         cap-add=SYS_ADMIN
-        cap-add=CAP_MKNOD
+        cap-add=MKNOD
         #--privileged
     steps:
       - uses: actions/checkout@v3.3.0
