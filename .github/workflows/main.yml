@@ -11,8 +11,8 @@ jobs:
       volumes:
         - /dev:/dev
       options:
-        cap-add=SYS_ADMIN
-        cap-add=MKNOD
+        --cap-add=SYS_ADMIN
+        --cap-add=MKNOD
         #--privileged
     steps:
       - uses: actions/checkout@v3.3.0
