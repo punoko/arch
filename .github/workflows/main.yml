@@ -3,12 +3,31 @@ on:
   push:
     branches: [ main ]
 jobs:
-  neofetch:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     container:
       image: archlinux
       volumes:
         - /dev:/dev
     steps:
-      - run: |
-          losetup -f
+      - name: List dir
+        run: |
+          ls -al
+          ls -al ./.github
+#       - name: Run build script
+#         run: ./.github/build.sh
+#         shell: bash
+
+# jobs:
+#   example-job:
+#     name: Save output
+#     steps:
+#       - shell: bash
+#         run: |
+#           expr 1 + 1 > output.log
+#       - name: Upload output file
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: output-log-file
+#           path: output.log
