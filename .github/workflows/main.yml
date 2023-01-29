@@ -5,11 +5,12 @@ on:
 jobs:
   neofetch:
     runs-on: ubuntu-latest
-    container: archlinux
+    container: archlinux:latest
     steps:
-      - name: Update packages
-        run: pacman --noconfirm -Syu
-      - name: Install neofetch
-        run: pacman --noconfirm -S neofetch
-      - name: Run neofetch
-        run: neofetch
+      - run: |
+          pacman --noconfirm -Syu neofetch
+          echo $0
+          lsblk
+          fdisk -l
+          losetup -f
+          neofetch
