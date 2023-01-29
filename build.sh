@@ -1,13 +1,15 @@
 #!/bin/bash
 
 echo "===== pacman ====="
-pacman -Syu --noconfirm arch-install-scripts btrfs-progs
+#pacman -Syu --noconfirm arch-install-scripts btrfs-progs
 
 echo "===== truncate ====="
 IMAGE=image.img
 truncate -s 2G ${IMAGE}
 
 losetup --find
+
+exit 0
 
 echo "===== losetup ====="
 LOOPDEV=$(losetup --find --partscan --show ${IMAGE})
