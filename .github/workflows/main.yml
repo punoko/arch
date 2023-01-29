@@ -8,10 +8,13 @@ jobs:
     container: archlinux:latest
     steps:
       - run: |
+          echo "PACMAN"
           pacman --noconfirm -Syu neofetch
+          echo "SHELL"
           echo $0
-          modprobe loop
+          echo "LSBLK"
           lsblk
+          echo "FDISK"
           fdisk -l
-          losetup -f
+          echo "NEOFETCH"
           neofetch
