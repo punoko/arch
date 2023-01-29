@@ -5,16 +5,10 @@ on:
 jobs:
   neofetch:
     runs-on: ubuntu-latest
-    container: archlinux:latest
+    container:
+      image: archlinux
+      volumes:
+        - /dev:/dev
     steps:
       - run: |
-          echo "PACMAN"
-          pacman --noconfirm -Syu neofetch
-          echo "SHELL"
-          echo $0
-          echo "LSBLK"
-          lsblk
-          echo "FDISK"
-          fdisk -l
-          echo "NEOFETCH"
-          neofetch
+          losetup -f
