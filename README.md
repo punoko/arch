@@ -1,2 +1,2 @@
 # arch
-Arch Linux stuff
+Arch Linux image stuff

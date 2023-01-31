@@ -3,34 +3,33 @@
 IMAGE="image.img"
 OUTPUT="arch.qcow2"
 MOUNT="/mnt"
+
 PACKAGES=(base btrfs-progs grub linux openssh reflector sudo zsh)
 SERVICES=(sshd systemd-networkd systemd-resolved systemd-timesyncd systemd-time-wait-sync)
 
 PACKAGES+=(cloud-init cloud-guest-utils)
 SERVICES+=(cloud-init cloud-init-local cloud-config cloud-final)
 
-echo -e "===== pacman ====="
+# pacman
 pacman -Syu --noconfirm --quiet arch-install-scripts btrfs-progs qemu-img
 
-echo "===== truncate ====="
+# truncate
 truncate -s 2G ${IMAGE}
 
-echo "===== losetup ====="
+# losetup
 LOOPDEV=$(losetup --find --partscan --show ${IMAGE})
-
-#LOLOLOL
 sleep 5
 
-echo "===== mkfs ====="
+# mkfs
 mkfs.btrfs "${LOOPDEV}"
 
-echo "===== mount ====="
+# mount
 mount -o compress-force=zstd,noatime "${LOOPDEV}" "${MOUNT}"
 
-echo "===== pacstrap ====="
+# pacstrap
 pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 
-echo "===== grub ====="
+# grub
 arch-chroot "${MOUNT}" /usr/bin/grub-install "${LOOPDEV}"
 sed -i 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=1/' "${MOUNT}/etc/default/grub"
 sed -i 's/^GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="net.ifnames=0"/' "${MOUNT}/etc/default/grub"
@@ -53,7 +52,7 @@ Server = https://mirror.rackspace.com/archlinux/\$repo/os/\$arch
 Server = https://mirror.leaseweb.net/archlinux/\$repo/os/\$arch
 EOF
 
-# Enabling important services
+# Enabling services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
 
 cp --reflink=always -a "${MOUNT}/boot/"{initramfs-linux-fallback.img,initramfs-linux.img}
@@ -68,23 +67,9 @@ rm "${IMAGE}"
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## OLD ATTEMPT
-
+#########################
+##     OLD ATTEMPT     ##
+#########################
 # #!/usr/bin/zsh
 
 # IMAGE="image.img"
