@@ -1,19 +1,24 @@
-name: Test
-on: push
+name: Image build
+on:
+  push:
+  schedule:
+    - cron: '32 1 * * 0'
 jobs:
-  test:
-    name: Test
+  build:
+    name: Build in docker
     runs-on: ubuntu-latest
     container:
       image: archlinux
       options:
         --privileged
     steps:
-      - name: Git checkout
+      - name: Checkout
         uses: actions/checkout@v3
-      - name: Build script
+
+      - name: Build
         run: ./build.sh
-      - name: Upload Artifact
+
+      - name: Upload
         uses: actions/upload-artifact@v3
         with:
           name: arch.qcow2
