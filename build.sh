@@ -4,7 +4,7 @@ IMAGE="image.img"
 OUTPUT="arch.qcow2"
 MOUNT="/mnt"
 
-PACKAGES=(base btrfs-progs grub linux openssh reflector sudo zsh)
+PACKAGES=(base btrfs-progs grml-zsh-config grub linux openssh reflector sudo zsh)
 SERVICES=(sshd systemd-networkd systemd-resolved systemd-timesyncd systemd-time-wait-sync)
 
 PACKAGES+=(cloud-init cloud-guest-utils)
@@ -51,6 +51,10 @@ Server = https://geo.mirror.pkgbuild.com/\$repo/os/\$arch
 Server = https://mirror.rackspace.com/archlinux/\$repo/os/\$arch
 Server = https://mirror.leaseweb.net/archlinux/\$repo/os/\$arch
 EOF
+
+# Setup zsh as default
+arch-chroot "${MOUNT}" /usr/bin/chsh -s /usr/bin/zsh root
+sed -i 's/^SHELL=.*$/SHELL=\/usr\/bin\/zsh/' "${MOUNT}/etc/default/useradd"
 
 # Enabling services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
