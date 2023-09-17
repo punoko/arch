@@ -1,0 +1,67 @@
+---
+name: Main
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - build.sh
+  schedule:
+    - cron: '32 1 * * 0'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Image build
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux
+      volumes:
+        - /dev:/dev
+      options:
+        --privileged
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 📅 Get Date
+        id: date
+        run: echo "date=$(/bin/date -u "+%Y%m")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: 📦 Cache
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-${{ steps.date.outputs.date }}
+
+      - name: 🧰 Dependencies
+        run: >-
+          pacman -Syu --needed --noconfirm --quiet
+          arch-install-scripts
+          btrfs-progs
+          dosfstools
+          python-openstackclient
+          qemu-img
+          ;
+          sed -i '/^NoExtract/d' /etc/pacman.conf
+        shell: bash
+
+      - name: 🚧 Build
+        run: ./build.sh
+        shell: bash
+
+      - name: 💿 Swift
+        env:
+          OS_AUTH_URL: ${{ secrets.OS_AUTH_URL }}
+          OS_IDENTITY_API_VERSION: ${{ secrets.OS_IDENTITY_API_VERSION }}
+          OS_INTERFACE: ${{ secrets.OS_INTERFACE }}
+          OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+          OS_PROJECT_DOMAIN_NAME: ${{ secrets.OS_PROJECT_DOMAIN_NAME }}
+          OS_PROJECT_ID: ${{ secrets.OS_PROJECT_ID }}
+          OS_PROJECT_NAME: ${{ secrets.OS_PROJECT_NAME }}
+          OS_REGION_NAME: ${{ secrets.OS_REGION_NAME }}
+          OS_USERNAME: ${{ secrets.OS_USERNAME }}
+          OS_USER_DOMAIN_NAME: ${{ secrets.OS_USER_DOMAIN_NAME }}
+        run: ./swift.sh
+        shell: bash
