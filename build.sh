@@ -202,7 +202,7 @@ ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vi"
 
 # Services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
-arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-homed.service
+arch-chroot "${MOUNT}" /usr/bin/systemctl disable systemd-homed
 ln -sf /run/systemd/resolve/stub-resolv.conf "${MOUNT}/etc/resolv.conf"
 
 # Pacman config
