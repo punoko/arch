@@ -9,7 +9,6 @@ QCOW_FILE="image.qcow2"
 
 ROOT_LABEL="Arch Linux"
 ROOT_SUBVOL="@arch"
-#ROOT_FLAGS="compress-force=zstd,noatime,subvol=$ROOT_SUBVOL"
 ROOT_FLAGS="compress=zstd,noatime"
 ROOT_GPT_TYPE="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" # Linux root (x86-64)
 
@@ -91,22 +90,15 @@ mount "${LOOPDEV}p1" "${MOUNT}/${ESP_DIR}"
 # Install
 pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 
-# Root partition is automatically mounted with its GPT partition type
-# This fstab entry is only necessary to activate systemd-growfs
-# GPT flag 59 set with sfdisk earlier has no effect as of systemd 253
-# https://github.com/systemd/systemd/issues/28133
-# Note that we could get away with x-systemd.growfs as the only option here
+# Setting fstab is unnecessary for the following reasons:
+#   root partition is automatically mounted with its GPT partition type
+#   root partition grows thanks to GPT flag 59 set with sfdisk earlier https://github.com/systemd/systemd/pull/30030
 #   subvol is implicit from `btrfs subvolume set-default`
-#   compress & noatime would be inherited from cmdline
-
-# Trying without fstab as it is supposedly now fixed https://github.com/systemd/systemd/issues/28133
+#   compress & noatime are set by cmdline
 #echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
-
-# Same thing here, cmdline could be empty and the system would boot just fine
-# We just prefer compress & noatime to be enabled early
-
 #CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
-CMDLINE="rootflags=${ROOT_FLAGS} rw"
+CMDLINE="rootflags=${ROOT_FLAGS}"
+
 # /etc/kernel/cmdline is only necessary when using UKI instead of type 1 drop-in bootloader entry
 arch-chroot "${MOUNT}" systemd-firstboot \
     --force \
@@ -115,7 +107,6 @@ arch-chroot "${MOUNT}" systemd-firstboot \
     --timezone=UTC \
     --root-shell=/usr/bin/zsh \
     ;
-    # --root-password=
     # --kernel-command-line="${CMDLINE}" \
 
 # Bootloader
@@ -159,8 +150,8 @@ EOF
 cat <<EOF >"${MOUNT}/etc/systemd/system/pacman-init.service"
 [Unit]
 Description=Pacman Keyring Initialization
-Before=sshd.service cloud-final.service archlinux-keyring-wkd-sync.service
-After=systemd-remount-fs.service
+After=systemd-growfs-root.service
+Before=cloud-final.service
 ConditionFirstBoot=yes
 
 [Service]
@@ -177,6 +168,7 @@ EOF
 cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
 [Unit]
 Description=Secure Boot Initialization
+After=systemd-growfs-root.service
 ConditionFirstBoot=yes
 
 [Service]
@@ -204,12 +196,13 @@ growpart:
 resize_rootfs: false
 EOF
 
-# Nvim Symlinks
+# Neovim Symlinks
 ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vim"
 ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vi"
 
 # Services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
+arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-homed.service
 ln -sf /run/systemd/resolve/stub-resolv.conf "${MOUNT}/etc/resolv.conf"
 
 # Pacman config
