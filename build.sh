@@ -97,7 +97,7 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 #   compress & noatime are set by cmdline
 #echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
 #CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
-CMDLINE="rootflags=${ROOT_FLAGS}"
+CMDLINE="rootflags=${ROOT_FLAGS} rw"
 
 # /etc/kernel/cmdline is only necessary when using UKI instead of type 1 drop-in bootloader entry
 arch-chroot "${MOUNT}" systemd-firstboot \
