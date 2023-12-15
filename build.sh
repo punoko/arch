@@ -9,7 +9,8 @@ QCOW_FILE="image.qcow2"
 
 ROOT_LABEL="Arch Linux"
 ROOT_SUBVOL="@arch"
-ROOT_FLAGS="compress-force=zstd,noatime,subvol=$ROOT_SUBVOL"
+#ROOT_FLAGS="compress-force=zstd,noatime,subvol=$ROOT_SUBVOL"
+ROOT_FLAGS="compress=zstd,noatime"
 ROOT_GPT_TYPE="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" # Linux root (x86-64)
 
 ESP_LABEL="ESP"
@@ -97,12 +98,15 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 # Note that we could get away with x-systemd.growfs as the only option here
 #   subvol is implicit from `btrfs subvolume set-default`
 #   compress & noatime would be inherited from cmdline
-echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
+
+# Trying without fstab as it is supposedly now fixed https://github.com/systemd/systemd/issues/28133
+#echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
 
 # Same thing here, cmdline could be empty and the system would boot just fine
 # We just prefer compress & noatime to be enabled early
 
-CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
+#CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
+CMDLINE="rootflags=${ROOT_FLAGS} rw"
 # /etc/kernel/cmdline is only necessary when using UKI instead of type 1 drop-in bootloader entry
 arch-chroot "${MOUNT}" systemd-firstboot \
     --force \
