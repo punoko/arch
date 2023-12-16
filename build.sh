@@ -95,6 +95,7 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 #   root partition grows thanks to GPT flag 59 set with sfdisk earlier https://github.com/systemd/systemd/pull/30030
 #   subvol is implicit from `btrfs subvolume set-default`
 #   compress & noatime are set by cmdline
+# Removing `rw` breaks boot
 #echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
 #CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
 CMDLINE="rootflags=${ROOT_FLAGS} rw"
@@ -131,7 +132,7 @@ rm -f $MOUNT/$ESP_DIR/loader/random-seed
 
 # Use systemd-repart to grow the root partition
 mkdir $MOUNT/etc/repart.d
-cat <<EOF >$MOUNT/etc/repart.d/root.conf
+cat <<EOF >"${MOUNT}/etc/repart.d/root.conf"
 [Partition]
 Type=root
 EOF
@@ -139,7 +140,7 @@ EOF
 # Basic Network DHCP Setup
 cat <<EOF >"${MOUNT}/etc/systemd/network/99-ethernet.network"
 [Match]
-Name=en* eth*
+Name=en*
 Type=ether
 
 [Network]
@@ -194,6 +195,9 @@ system_info:
 growpart:
   mode: off
 resize_rootfs: false
+disable_root: false
+ssh_deletekeys: false
+ssh_genkeytypes:
 EOF
 
 # Neovim Symlinks
@@ -202,7 +206,7 @@ ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vi"
 
 # Services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
-arch-chroot "${MOUNT}" /usr/bin/systemctl disable systemd-homed
+arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-homed systemd-userdbd
 ln -sf /run/systemd/resolve/stub-resolv.conf "${MOUNT}/etc/resolv.conf"
 
 # Pacman config
@@ -215,8 +219,10 @@ Server = https://geo.mirror.pkgbuild.com/\$repo/os/\$arch
 EOF
 
 # Disable SSH password and root login
-sed -i 's/^#PermitRootLogin.*$/PermitRootLogin no/' "${MOUNT}/etc/ssh/sshd_config"
-sed -i 's/^#PasswordAuthentication.*$/PasswordAuthentication no/' "${MOUNT}/etc/ssh/sshd_config"
+cat <<EOF >"${MOUNT}/etc/ssh/sshd_config.d/custom.conf"
+PermitRootLogin no
+PasswordAuthentication no
+EOF
 
 # Image cleanup
 sync -f "$MOUNT/etc/os-release"
