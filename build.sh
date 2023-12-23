@@ -53,13 +53,13 @@ SERVICES=(
 
 # Cleanup
 cleanup() {
-    if findmnt --mountpoint $MOUNT >/dev/null; then
-        umount --recursive $MOUNT
+    if findmnt --mountpoint "$MOUNT" >/dev/null; then
+        umount --recursive "$MOUNT"
     fi
     if [[ -n $LOOPDEV ]]; then
-        losetup --detach $LOOPDEV
+        losetup --detach "$LOOPDEV"
     fi
-    rm -rf $MOUNT
+    rm -rf "$MOUNT"
 }
 trap cleanup ERR
 
@@ -126,12 +126,12 @@ options ${CMDLINE}
 EOF
 
 # https://systemd.io/BUILDING_IMAGES/
-rm -f $MOUNT/etc/machine-id
-rm -f $MOUNT/var/lib/systemd/random-seed
-rm -f $MOUNT/$ESP_DIR/loader/random-seed
+rm -f "$MOUNT/etc/machine-id"
+rm -f "$MOUNT/var/lib/systemd/random-seed"
+rm -f "$MOUNT/$ESP_DIR/loader/random-seed"
 
 # Use systemd-repart to grow the root partition
-mkdir $MOUNT/etc/repart.d
+mkdir "$MOUNT/etc/repart.d"
 cat <<EOF >"${MOUNT}/etc/repart.d/root.conf"
 [Partition]
 Type=root
@@ -195,9 +195,10 @@ system_info:
 growpart:
   mode: off
 resize_rootfs: false
-disable_root: false
 ssh_deletekeys: false
-ssh_genkeytypes:
+ssh_genkeytypes: []
+disable_root: true
+disable_root_opts: "#"
 EOF
 
 # Neovim Symlinks
