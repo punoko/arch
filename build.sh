@@ -108,15 +108,20 @@ arch-chroot "${MOUNT}" systemd-firstboot \
     --timezone=UTC \
     --root-shell=/usr/bin/zsh \
     ;
-    # --kernel-command-line="${CMDLINE}" \
+# --kernel-command-line="${CMDLINE}" \
 
 # Bootloader
 arch-chroot "${MOUNT}" bootctl install --no-variables
-sed -i "s/^MODULES.*$/MODULES=(btrfs)/" "${MOUNT}/etc/mkinitcpio.conf"
-sed -i "s/^HOOKS.*$/HOOKS=(systemd autodetect modconf block keyboard)/" "${MOUNT}/etc/mkinitcpio.conf"
+
+cat <<EOF >"${MOUNT}/etc/mkinitcpio.conf.d/custom.conf"
+MODULES=(btrfs)
+HOOKS=(systemd autodetect microcode modconf keyboard block)
+MODULES_DECOMPRESS="yes"
+EOF
 arch-chroot "${MOUNT}" mkinitcpio --allpresets
 mv "${MOUNT}/${ESP_DIR}/"{initramfs-linux-fallback.img,initramfs-linux.img}
 sed -i "s/^PRESETS.*$/PRESETS=('default')/" "${MOUNT}/etc/mkinitcpio.d/linux.preset"
+sed -i 's/\(.*microcode.*\)/#\1/' "${MOUNT}/etc/mkinitcpio.d/linux.preset"
 cat <<EOF >"${MOUNT}/${ESP_DIR}/loader/entries/arch.conf"
 title    Arch Linux
 sort-key arch
