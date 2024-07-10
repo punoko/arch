@@ -30,7 +30,7 @@ PACKAGES=(
     openssh
     pacman-contrib
     reflector
-    sbctl
+    # sbctl
     sudo
     zsh
 )
@@ -40,7 +40,7 @@ SERVICES=(
     cloud-config
     cloud-final
     pacman-init
-    secure-boot-init
+    # secure-boot-init
     sshd
     systemd-boot-update
     systemd-networkd
@@ -170,26 +170,26 @@ ExecStart=/usr/bin/pacman-key --populate
 WantedBy=multi-user.target
 EOF
 
-# Secure Boot Initialization
-cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
-[Unit]
-Description=Secure Boot Initialization
-After=systemd-growfs-root.service
-ConditionFirstBoot=yes
+# # Secure Boot Initialization
+# cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
+# [Unit]
+# Description=Secure Boot Initialization
+# After=systemd-growfs-root.service
+# ConditionFirstBoot=yes
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/sbctl create-keys
-ExecStart=/usr/bin/sbctl sign -s /boot/vmlinuz-linux
-ExecStart=/usr/bin/sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-ExecStart=/usr/bin/sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
-ExecStart=/usr/bin/sbctl sign -s /usr/lib/systemd/boot/efi/systemd-bootx64.efi
-ExecStart=/usr/bin/sbctl enroll-keys --yes-this-might-brick-my-machine
+# [Service]
+# Type=oneshot
+# RemainAfterExit=yes
+# ExecStart=/usr/bin/sbctl create-keys
+# ExecStart=/usr/bin/sbctl sign -s /boot/vmlinuz-linux
+# ExecStart=/usr/bin/sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+# ExecStart=/usr/bin/sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
+# ExecStart=/usr/bin/sbctl sign -s /usr/lib/systemd/boot/efi/systemd-bootx64.efi
+# ExecStart=/usr/bin/sbctl enroll-keys --yes-this-might-brick-my-machine
 
-[Install]
-WantedBy=multi-user.target
-EOF
+# [Install]
+# WantedBy=multi-user.target
+# EOF
 
 # Cloud Init Settings
 cat <<EOF >"${MOUNT}/etc/cloud/cloud.cfg.d/custom.cfg"
