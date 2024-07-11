@@ -9,12 +9,12 @@ QCOW_FILE="image.qcow2"
 
 ROOT_LABEL="Arch Linux"
 ROOT_SUBVOL="@arch"
-ROOT_FLAGS="compress=zstd,noatime"
+ROOT_FLAGS="compress=zstd,noatime,subvol=$ROOT_SUBVOL"
 ROOT_GPT_TYPE="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" # Linux root (x86-64)
 
 ESP_LABEL="ESP"
 ESP_SIZE="100M"
-ESP_DIR="boot"
+ESP_DIR="efi"
 ESP_GPT_TYPE="C12A7328-F81F-11D2-BA4B-00A0C93EC93B" # EFI System
 
 PACKAGES=(
@@ -30,9 +30,10 @@ PACKAGES=(
     neovim
     openssh
     pacman-contrib
+    polkit
     reflector
+    systemd-ukify
     # sbctl
-    # sudo
     zsh
 )
 SERVICES=(
@@ -94,11 +95,9 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 # Setting fstab is unnecessary for the following reasons:
 #   root partition is automatically mounted with its GPT partition type
 #   root partition grows thanks to GPT flag 59 set with sfdisk earlier https://github.com/systemd/systemd/pull/30030
-#   subvol is implicit from `btrfs subvolume set-default`
+#   subvol is implicit from `btrfs subvolume set-default` and set with cmdline anyway
 #   compress & noatime are set by cmdline
 # Removing `rw` breaks boot
-#echo "UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) / btrfs rw,x-systemd.growfs,${ROOT_FLAGS} 0 0" >>"${MOUNT}/etc/fstab"
-#CMDLINE="root=UUID=$(blkid -s UUID -o value ${LOOPDEV}p2) rootflags=${ROOT_FLAGS} rw"
 CMDLINE="rootflags=${ROOT_FLAGS} rw"
 
 # /etc/kernel/cmdline is only necessary when using UKI instead of type 1 drop-in bootloader entry
@@ -108,28 +107,26 @@ arch-chroot "${MOUNT}" systemd-firstboot \
     --locale=C.UTF-8 \
     --timezone=UTC \
     --root-shell=/usr/bin/zsh \
+    --kernel-command-line="${CMDLINE}" \
     ;
-# --kernel-command-line="${CMDLINE}" \
 
 # Bootloader
 arch-chroot "${MOUNT}" bootctl install --no-variables
 
+rm -f "${MOUNT}"/boot/initramfs-linux{,-fallback}.img
+mv "${MOUNT}/etc/mkinitcpio.d/linux."{preset,original}
 cat <<EOF >"${MOUNT}/etc/mkinitcpio.conf.d/custom.conf"
 MODULES=(btrfs)
 HOOKS=(systemd autodetect microcode modconf keyboard block)
-MODULES_DECOMPRESS="yes"
+EOF
+cat <<EOF >"${MOUNT}/etc/mkinitcpio.d/linux.preset"
+PRESETS=('default')
+default_kver="/boot/vmlinuz-linux"
+default_uki="/efi/EFI/Linux/arch.efi"
+default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp -S autodetect"
 EOF
 arch-chroot "${MOUNT}" mkinitcpio --allpresets
-mv "${MOUNT}/${ESP_DIR}/"{initramfs-linux-fallback.img,initramfs-linux.img}
-sed -i "s/^PRESETS.*$/PRESETS=('default')/" "${MOUNT}/etc/mkinitcpio.d/linux.preset"
-sed -i 's/\(.*microcode.*\)/#\1/' "${MOUNT}/etc/mkinitcpio.d/linux.preset"
-cat <<EOF >"${MOUNT}/${ESP_DIR}/loader/entries/arch.conf"
-title    Arch Linux
-sort-key arch
-linux   /vmlinuz-linux
-initrd  /initramfs-linux.img
-options ${CMDLINE}
-EOF
+sed -i "s/ -S autodetect//" "${MOUNT}/etc/mkinitcpio.d/linux.preset"
 
 # https://systemd.io/BUILDING_IMAGES/
 rm -f "$MOUNT/etc/machine-id"
@@ -213,7 +210,7 @@ ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vi"
 
 # Services
 arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
-arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-homed systemd-userdbd
+arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-nsresourced.socket systemd-userdbd.socket
 ln -sf /run/systemd/resolve/stub-resolv.conf "${MOUNT}/etc/resolv.conf"
 
 # Pacman config
