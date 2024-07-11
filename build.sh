@@ -19,6 +19,7 @@ ESP_GPT_TYPE="C12A7328-F81F-11D2-BA4B-00A0C93EC93B" # EFI System
 
 PACKAGES=(
     base
+    base-devel
     btrfs-progs
     cloud-init
     cloud-guest-utils
@@ -31,7 +32,7 @@ PACKAGES=(
     pacman-contrib
     reflector
     # sbctl
-    sudo
+    # sudo
     zsh
 )
 SERVICES=(
