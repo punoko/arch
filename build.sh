@@ -77,19 +77,19 @@ EOF
 LOOPDEV=$(losetup --find --partscan --show $IMG_FILE)
 sleep 1
 
-mkfs.vfat -F 32 -n "${ESP_LABEL}" "${LOOPDEV}p1"
-mkfs.btrfs -L "${ROOT_LABEL}" "${LOOPDEV}p2"
+mkfs.vfat -F 32 -n "$ESP_LABEL" "$LOOPDEV"p1
+mkfs.btrfs -L "$ROOT_LABEL" "$LOOPDEV"p2
 
 # Image mount
-mount "${LOOPDEV}p2" "${MOUNT}"
-btrfs subvolume create "${MOUNT}/${ROOT_SUBVOL}"
-btrfs subvolume set-default "${MOUNT}/${ROOT_SUBVOL}"
-umount "${MOUNT}"
-mount -o "${ROOT_FLAGS}" "${LOOPDEV}p2" "${MOUNT}"
-mount --mkdir=700 "${LOOPDEV}p1" "${MOUNT}/${ESP_DIR}"
+mount "$LOOPDEV"p2 "$MOUNT"
+btrfs subvolume create "$MOUNT/$ROOT_SUBVOL"
+btrfs subvolume set-default "$MOUNT/$ROOT_SUBVOL"
+umount "$MOUNT"
+mount -o "$ROOT_FLAGS" "$LOOPDEV"p2 "$MOUNT"
+mount --mkdir=700 "$LOOPDEV"p1 "$MOUNT/$ESP_DIR"
 
 # Install
-pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
+pacstrap -cGM "$MOUNT" "${PACKAGES[@]}"
 
 # Setting fstab is unnecessary for the following reasons:
 #   root partition is automatically mounted with its GPT partition type
@@ -97,33 +97,33 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 #   subvol is implicit from `btrfs subvolume set-default` and set with cmdline anyway
 #   compress & noatime are set by cmdline
 # Not specifying `rw` in cmdline breaks boot
-CMDLINE="rootflags=${ROOT_FLAGS} rw"
-arch-chroot "${MOUNT}" systemd-firstboot \
+CMDLINE="rootflags=$ROOT_FLAGS rw"
+arch-chroot "$MOUNT" systemd-firstboot \
     --force \
     --keymap=us \
     --locale=C.UTF-8 \
     --timezone=UTC \
     --root-shell=/usr/bin/zsh \
-    --kernel-command-line="${CMDLINE}" \
+    --kernel-command-line="$CMDLINE" \
     ;
 
 # Bootloader
-arch-chroot "${MOUNT}" bootctl install --no-variables
+arch-chroot "$MOUNT" bootctl install --no-variables
 
-rm -f "${MOUNT}"/boot/initramfs-linux{,-fallback}.img
-mv "${MOUNT}/etc/mkinitcpio.d/linux."{preset,original}
-cat <<EOF >"${MOUNT}/etc/mkinitcpio.conf.d/custom.conf"
+rm -f "$MOUNT"/boot/initramfs-linux{,-fallback}.img
+mv "$MOUNT/etc/mkinitcpio.d/linux."{preset,original}
+cat <<EOF >"$MOUNT/etc/mkinitcpio.conf.d/custom.conf"
 MODULES=(btrfs)
 HOOKS=(systemd autodetect microcode modconf keyboard block)
 EOF
-cat <<EOF >"${MOUNT}/etc/mkinitcpio.d/linux.preset"
+cat <<EOF >"$MOUNT/etc/mkinitcpio.d/linux.preset"
 PRESETS=('default')
 default_kver="/boot/vmlinuz-linux"
 default_uki="/efi/EFI/Linux/arch.efi"
 default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp -S autodetect"
 EOF
-arch-chroot "${MOUNT}" mkinitcpio --allpresets
-sed -i "s/ -S autodetect//" "${MOUNT}/etc/mkinitcpio.d/linux.preset"
+arch-chroot "$MOUNT" mkinitcpio --allpresets
+sed -i "s/ -S autodetect//" "$MOUNT/etc/mkinitcpio.d/linux.preset"
 
 # https://systemd.io/BUILDING_IMAGES/
 rm -f "$MOUNT/etc/machine-id"
@@ -132,13 +132,13 @@ rm -f "$MOUNT/$ESP_DIR/loader/random-seed"
 
 # Use systemd-repart to grow the root partition
 mkdir "$MOUNT/etc/repart.d"
-cat <<EOF >"${MOUNT}/etc/repart.d/root.conf"
+cat <<EOF >"$MOUNT/etc/repart.d/root.conf"
 [Partition]
 Type=root
 EOF
 
 # Basic Network DHCP Setup
-cat <<EOF >"${MOUNT}/etc/systemd/network/99-ethernet.network"
+cat <<EOF >"$MOUNT/etc/systemd/network/99-ethernet.network"
 [Match]
 Name=en*
 Type=ether
@@ -148,7 +148,7 @@ DHCP=yes
 EOF
 
 # Pacman Keyring Initialization
-cat <<EOF >"${MOUNT}/etc/systemd/system/pacman-init.service"
+cat <<EOF >"$MOUNT/etc/systemd/system/pacman-init.service"
 [Unit]
 Description=Pacman Keyring Initialization
 After=systemd-growfs-root.service
@@ -166,7 +166,7 @@ WantedBy=multi-user.target
 EOF
 
 # # Secure Boot Initialization
-cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
+cat <<EOF >"$MOUNT/etc/systemd/system/secure-boot-init.service"
 [Unit]
 Description=Secure Boot Initialization
 After=systemd-growfs-root.service
@@ -187,7 +187,7 @@ WantedBy=multi-user.target
 EOF
 
 # Cloud Init Settings
-cat <<EOF >"${MOUNT}/etc/cloud/cloud.cfg.d/custom.cfg"
+cat <<EOF >"$MOUNT/etc/cloud/cloud.cfg.d/custom.cfg"
 system_info:
   default_user:
     shell: /usr/bin/zsh
@@ -202,32 +202,32 @@ disable_root_opts: "#"
 EOF
 
 # Neovim Symlinks
-ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vim"
-ln -sf /usr/bin/nvim "${MOUNT}/usr/local/bin/vi"
+ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
+ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
 
 # Services
-arch-chroot "${MOUNT}" /usr/bin/systemctl enable "${SERVICES[@]}"
-arch-chroot "${MOUNT}" /usr/bin/systemctl mask systemd-nsresourced.socket systemd-userdbd.socket
-ln -sf /run/systemd/resolve/stub-resolv.conf "${MOUNT}/etc/resolv.conf"
+arch-chroot "$MOUNT" /usr/bin/systemctl enable "${SERVICES[@]}"
+arch-chroot "$MOUNT" /usr/bin/systemctl mask systemd-nsresourced.socket systemd-userdbd.socket
+ln -sf /run/systemd/resolve/stub-resolv.conf "$MOUNT/etc/resolv.conf"
 
 # Pacman config
-sed -i 's/^#Color/Color/' "${MOUNT}/etc/pacman.conf"
-sed -i 's/^#ParallelDownloads/ParallelDownloads/' "${MOUNT}/etc/pacman.conf"
+sed -i 's/^#Color/Color/' "$MOUNT/etc/pacman.conf"
+sed -i 's/^#ParallelDownloads/ParallelDownloads/' "$MOUNT/etc/pacman.conf"
 
 # Mirror list
-cat <<EOF >"${MOUNT}/etc/pacman.d/mirrorlist"
+cat <<EOF >"$MOUNT/etc/pacman.d/mirrorlist"
 Server = https://geo.mirror.pkgbuild.com/\$repo/os/\$arch
 EOF
 
 # Disable SSH password and root login
-cat <<EOF >"${MOUNT}/etc/ssh/sshd_config.d/custom.conf"
+cat <<EOF >"$MOUNT/etc/ssh/sshd_config.d/custom.conf"
 PermitRootLogin no
 PasswordAuthentication no
 EOF
 
 # Image cleanup
 sync -f "$MOUNT/etc/os-release"
-fstrim --verbose "${MOUNT}/${ESP_DIR}"
-fstrim --verbose "${MOUNT}"
+fstrim --verbose "$MOUNT/$ESP_DIR"
+fstrim --verbose "$MOUNT"
 cleanup
-qemu-img convert -f raw -O qcow2 "${IMG_FILE}" "${QCOW_FILE}"
+qemu-img convert -f raw -O qcow2 "$IMG_FILE" "$QCOW_FILE"
