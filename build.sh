@@ -33,7 +33,7 @@ PACKAGES=(
     polkit
     reflector
     systemd-ukify
-    # sbctl
+    sbctl
     zsh
 )
 SERVICES=(
@@ -42,7 +42,7 @@ SERVICES=(
     cloud-config
     cloud-final
     pacman-init
-    # secure-boot-init
+    secure-boot-init
     sshd
     systemd-boot-update
     systemd-networkd
@@ -86,8 +86,7 @@ btrfs subvolume create "${MOUNT}/${ROOT_SUBVOL}"
 btrfs subvolume set-default "${MOUNT}/${ROOT_SUBVOL}"
 umount "${MOUNT}"
 mount -o "${ROOT_FLAGS}" "${LOOPDEV}p2" "${MOUNT}"
-mkdir "${MOUNT}/${ESP_DIR}"
-mount "${LOOPDEV}p1" "${MOUNT}/${ESP_DIR}"
+mount --mkdir=700 "${LOOPDEV}p1" "${MOUNT}/${ESP_DIR}"
 
 # Install
 pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
@@ -97,10 +96,8 @@ pacstrap -cGM "${MOUNT}" "${PACKAGES[@]}"
 #   root partition grows thanks to GPT flag 59 set with sfdisk earlier https://github.com/systemd/systemd/pull/30030
 #   subvol is implicit from `btrfs subvolume set-default` and set with cmdline anyway
 #   compress & noatime are set by cmdline
-# Removing `rw` breaks boot
+# Not specifying `rw` in cmdline breaks boot
 CMDLINE="rootflags=${ROOT_FLAGS} rw"
-
-# /etc/kernel/cmdline is only necessary when using UKI instead of type 1 drop-in bootloader entry
 arch-chroot "${MOUNT}" systemd-firstboot \
     --force \
     --keymap=us \
@@ -169,25 +166,25 @@ WantedBy=multi-user.target
 EOF
 
 # # Secure Boot Initialization
-# cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
-# [Unit]
-# Description=Secure Boot Initialization
-# After=systemd-growfs-root.service
-# ConditionFirstBoot=yes
+cat <<EOF >"${MOUNT}/etc/systemd/system/secure-boot-init.service"
+[Unit]
+Description=Secure Boot Initialization
+After=systemd-growfs-root.service
+ConditionFirstBoot=yes
 
-# [Service]
-# Type=oneshot
-# RemainAfterExit=yes
-# ExecStart=/usr/bin/sbctl create-keys
-# ExecStart=/usr/bin/sbctl sign -s /boot/vmlinuz-linux
-# ExecStart=/usr/bin/sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-# ExecStart=/usr/bin/sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
-# ExecStart=/usr/bin/sbctl sign -s /usr/lib/systemd/boot/efi/systemd-bootx64.efi
-# ExecStart=/usr/bin/sbctl enroll-keys --yes-this-might-brick-my-machine
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/sbctl create-keys
+ExecStart=/usr/bin/sbctl sign -s /efi/EFI/Linux/arch.efi
+ExecStart=/usr/bin/sbctl sign -s /efi/EFI/BOOT/BOOTX64.EFI
+ExecStart=/usr/bin/sbctl sign -s /efi/EFI/systemd/systemd-bootx64.efi
+ExecStart=/usr/bin/sbctl sign -s /usr/lib/systemd/boot/efi/systemd-bootx64.efi
+ExecStart=/usr/bin/sbctl enroll-keys --yes-this-might-brick-my-machine
 
-# [Install]
-# WantedBy=multi-user.target
-# EOF
+[Install]
+WantedBy=multi-user.target
+EOF
 
 # Cloud Init Settings
 cat <<EOF >"${MOUNT}/etc/cloud/cloud.cfg.d/custom.cfg"
