@@ -23,7 +23,9 @@ PACKAGES=(
     btrfs-progs
     cloud-init
     cloud-guest-utils
+    fzf
     grml-zsh-config
+    htop
     iptables-nft
     linux
     man-db
@@ -35,6 +37,9 @@ PACKAGES=(
     systemd-ukify
     sbctl
     zsh
+    zsh-autosuggestions
+    zsh-completions
+    zsh-syntax-highlighting
 )
 SERVICES=(
     cloud-init
@@ -223,6 +228,13 @@ EOF
 cat <<EOF >"$MOUNT/etc/ssh/sshd_config.d/custom.conf"
 PermitRootLogin no
 PasswordAuthentication no
+EOF
+
+# ZSH plugins
+cat <<EOF >>"$MOUNT/etc/zsh/zshrc"
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source <(fzf --zsh)
 EOF
 
 # Image cleanup
