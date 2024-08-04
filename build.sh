@@ -1,25 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 MOUNT="$(mktemp --directory)"
 
+HOSTNAME="arch"
+KEYMAP="us"
+LOCALE="C.UTF-8"
+TIMEZONE="UTC"
+
 IMG_SIZE="2G"
 IMG_FILE="image.img"
 QCOW_FILE="image.qcow2"
-
-ROOT_LABEL="Arch Linux"
-ROOT_SUBVOL="@arch"
-ROOT_FLAGS="compress=zstd,noatime,subvol=$ROOT_SUBVOL"
-ROOT_GPT_TYPE="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" # Linux root (x86-64)
 
 ESP_LABEL="ESP"
 ESP_SIZE="100M"
 ESP_DIR="efi"
 ESP_GPT_TYPE="C12A7328-F81F-11D2-BA4B-00A0C93EC93B" # EFI System
 
+ROOT_LABEL="Arch Linux"
+ROOT_SUBVOL="@arch"
+ROOT_FLAGS="compress=zstd,noatime,subvol=$ROOT_SUBVOL"
+ROOT_GPT_TYPE="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" # Linux root (x86-64)
+
 PACKAGES=(
     base
-    base-devel
     btrfs-progs
     cloud-init
     cloud-guest-utils
@@ -27,20 +31,22 @@ PACKAGES=(
     grml-zsh-config
     htop
     iptables-nft
-    linux
+    # linux
     man-db
+    mkinitcpio
     neovim
     openssh
     pacman-contrib
     polkit
     reflector
+    sudo
     systemd-ukify
     zsh
     zsh-autosuggestions
     zsh-completions
     zsh-syntax-highlighting
 )
-SERVICES=(
+UNITS_ENABLE=(
     cloud-init
     cloud-init-local
     cloud-config
@@ -53,10 +59,10 @@ SERVICES=(
     systemd-timesyncd
     systemd-time-wait-sync
 
+    btrfs-scrub@-.timer
     paccache.timer
 )
-MASK=(
-    systemd-nsresourced.socket
+UNITS_DISABLE=(
     systemd-userdbd.socket
 )
 
@@ -108,18 +114,16 @@ CMDLINE="rootflags=$ROOT_FLAGS rw"
 systemd-firstboot \
     --root="$MOUNT" \
     --force \
-    --keymap=us \
-    --locale=C.UTF-8 \
-    --timezone=UTC \
+    --keymap="$KEYMAP" \
+    --locale="$LOCALE" \
+    --hostname="$HOSTNAME" \
+    --timezone="$TIMEZONE" \
     --root-shell=/usr/bin/zsh \
     --kernel-command-line="$CMDLINE" \
     ;
 
 # Bootloader
 bootctl install --root "$MOUNT" --no-variables
-
-rm -f "$MOUNT"/boot/initramfs-linux{,-fallback}.img
-mv "$MOUNT/etc/mkinitcpio.d/linux."{preset,original}
 cat <<EOF >"$MOUNT/etc/mkinitcpio.conf.d/custom.conf"
 MODULES=(btrfs)
 HOOKS=(systemd autodetect microcode modconf keyboard block)
@@ -127,10 +131,12 @@ EOF
 cat <<EOF >"$MOUNT/etc/mkinitcpio.d/linux.preset"
 PRESETS=('default')
 default_kver="/boot/vmlinuz-linux"
-default_uki="/efi/EFI/Linux/arch.efi"
+default_uki="/$ESP_DIR/EFI/Linux/arch.efi"
 default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp -S autodetect"
 EOF
-arch-chroot "$MOUNT" mkinitcpio --allpresets
+
+# Kernel
+pacstrap -cGM "$MOUNT" linux
 sed -i "s/ -S autodetect//" "$MOUNT/etc/mkinitcpio.d/linux.preset"
 
 # https://systemd.io/BUILDING_IMAGES/
@@ -154,6 +160,7 @@ Type=ether
 [Network]
 DHCP=yes
 EOF
+ln -sf /run/systemd/resolve/stub-resolv.conf "$MOUNT/etc/resolv.conf"
 
 # Pacman Keyring Initialization
 cat <<EOF >"$MOUNT/etc/systemd/system/pacman-init.service"
@@ -188,18 +195,14 @@ disable_root: true
 disable_root_opts: "#"
 EOF
 
-# Neovim Symlinks
-ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
-ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
-
 # Services
-systemctl --root="$MOUNT" enable "${SERVICES[@]}"
-systemctl --root="$MOUNT" mask "${MASK[@]}"
-ln -sf /run/systemd/resolve/stub-resolv.conf "$MOUNT/etc/resolv.conf"
+systemctl --root="$MOUNT" enable "${UNITS_ENABLE[@]}"
+systemctl --root="$MOUNT" disable "${UNITS_DISABLE[@]}"
 
 # Pacman config
 sed -i 's/^#Color/Color/' "$MOUNT/etc/pacman.conf"
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' "$MOUNT/etc/pacman.conf"
+sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' "$MOUNT/etc/pacman.conf"
 
 # Mirror list
 cat <<EOF >"$MOUNT/etc/pacman.d/mirrorlist"
@@ -218,6 +221,10 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source <(fzf --zsh)
 EOF
+
+# Neovim Symlinks
+ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
+ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
 
 # Image cleanup
 sync -f "$MOUNT/etc/os-release"
