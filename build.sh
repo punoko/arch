@@ -57,6 +57,10 @@ SERVICES=(
 
     paccache.timer
 )
+MASK=(
+    systemd-nsresourced.socket
+    systemd-userdbd.socket
+)
 
 # Cleanup
 cleanup() {
@@ -103,7 +107,8 @@ pacstrap -cGM "$MOUNT" "${PACKAGES[@]}"
 #   compress & noatime are set by cmdline
 # Not specifying `rw` in cmdline breaks boot
 CMDLINE="rootflags=$ROOT_FLAGS rw"
-arch-chroot "$MOUNT" systemd-firstboot \
+systemd-firstboot \
+    --root="$MOUNT" \
     --force \
     --keymap=us \
     --locale=C.UTF-8 \
@@ -113,7 +118,7 @@ arch-chroot "$MOUNT" systemd-firstboot \
     ;
 
 # Bootloader
-arch-chroot "$MOUNT" bootctl install --no-variables
+bootctl install --root "$MOUNT" --no-variables
 
 rm -f "$MOUNT"/boot/initramfs-linux{,-fallback}.img
 mv "$MOUNT/etc/mkinitcpio.d/linux."{preset,original}
@@ -211,8 +216,8 @@ ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
 ln -sf /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
 
 # Services
-arch-chroot "$MOUNT" /usr/bin/systemctl enable "${SERVICES[@]}"
-arch-chroot "$MOUNT" /usr/bin/systemctl mask systemd-nsresourced.socket systemd-userdbd.socket
+systemctl --root="$MOUNT" enable "${SERVICES[@]}"
+systemctl --root="$MOUNT" mask "${MASK[@]}"
 ln -sf /run/systemd/resolve/stub-resolv.conf "$MOUNT/etc/resolv.conf"
 
 # Pacman config
