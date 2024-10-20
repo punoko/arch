@@ -35,7 +35,6 @@ PACKAGES+=(
     base
     btrfs-progs
     cloud-init
-    cloud-guest-utils
     fzf
     grml-zsh-config
     htop
@@ -54,9 +53,9 @@ PACKAGES+=(
     zsh-syntax-highlighting
 )
 UNITS_ENABLE+=(
-    cloud-init
-    cloud-init-local
     cloud-config
+    cloud-init-local
+    cloud-init-main
     cloud-final
     pacman-init
     sshd
