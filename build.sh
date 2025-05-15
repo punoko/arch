@@ -35,8 +35,7 @@ PACKAGES+=(
     base
     btrfs-progs
     cloud-init
-    fzf
-    grml-zsh-config
+    fish
     htop
     iptables-nft
     linux
@@ -48,9 +47,6 @@ PACKAGES+=(
     polkit
     sudo
     systemd-ukify
-    zsh
-    zsh-autosuggestions
-    zsh-syntax-highlighting
 )
 UNITS_ENABLE+=(
     cloud-init-main
@@ -162,7 +158,7 @@ systemd-firstboot \
     --locale="$LOCALE" \
     --hostname="$HOSTNAME" \
     --timezone="$TIMEZONE" \
-    --root-shell=/usr/bin/zsh \
+    --root-shell=/usr/bin/fish \
     ;
 
 echo "### NETWORK SETTINGS" >&2
@@ -208,7 +204,7 @@ EOF
 cat <<EOF >"$MOUNT/etc/cloud/cloud.cfg.d/custom.cfg"
 system_info:
   default_user:
-    shell: /usr/bin/zsh
+    shell: /usr/bin/fish
     gecos:
 growpart:
   mode: off
@@ -238,12 +234,6 @@ EOF
 cat <<EOF >"$MOUNT/etc/ssh/sshd_config.d/custom.conf"
 PermitRootLogin no
 PasswordAuthentication no
-EOF
-# ZSH plugins
-cat <<EOF >>"$MOUNT/etc/zsh/zshrc"
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source <(fzf --zsh)
 EOF
 # Neovim Symlinks
 ln -s /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
