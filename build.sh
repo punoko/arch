@@ -218,6 +218,12 @@ ssh_genkeytypes: []
 disable_root: true
 disable_root_opts: "#"
 EOF
+mkdir --parents "$MOUNT/etc/systemd/system/getty@.service.d"
+cat <<EOF >"$MOUNT/etc/systemd/system/getty@.service.d/autologin.conf"
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --autologin root --noclear %I $TERM
+EOF
 
 echo "### MISC SETTINGS" >&2
 # Pacman config
