@@ -1,0 +1,15 @@
+[project]
+name = "arch"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = ["python-openstackclient"]
+
+[dependency-groups]
+dev = ["ruff"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
