@@ -13,7 +13,7 @@ logging.basicConfig(format="%(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 NAME = "punoko"
-FILE = "image.qcow2"
+FILE = "punoko.qcow2"
 version = datetime.datetime.now(tz=datetime.UTC).date().strftime("%Y.%m.%d")
 
 logger.info("Connecting to openstack")

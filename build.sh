@@ -7,8 +7,8 @@ LOCALE="C.UTF-8"
 TIMEZONE="UTC"
 
 IMG_SIZE="2G"
-IMG_FILE="image.img"
-QCOW_FILE="image.qcow2"
+IMG_FILE="punoko.img"
+QCOW_FILE="punoko.qcow2"
 
 # This setup makes writing fstab unnecessary because :
 #   - root partition is automatically mounted according to its GPT partition type
@@ -44,7 +44,6 @@ PACKAGES+=(
     neovim
     openssh
     pacman-contrib
-    polkit
     sudo
     systemd-ukify
 )
@@ -54,13 +53,14 @@ UNITS_ENABLE+=(
     cloud-init-network
     cloud-config
     cloud-final
-    pacman-init
     sshd
     systemd-boot-update
     systemd-networkd
     systemd-resolved
     systemd-timesyncd
     systemd-time-wait-sync
+
+    firstboot
 
     btrfs-scrub@-.timer
     paccache.timer
@@ -193,24 +193,6 @@ disable_root: true
 disable_root_opts: "#"
 EOF
 
-echo "::warning::PACMAN KEYRING INIT"
-cat <<EOF >"$MOUNT/etc/systemd/system/pacman-init.service"
-[Unit]
-Description=Pacman Keyring Initialization
-After=systemd-growfs-root.service
-Before=cloud-final.service
-ConditionFirstBoot=yes
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/pacman-key --init
-ExecStart=/usr/bin/pacman-key --populate
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
 echo "::warning::CONSOLE AUTOLOGIN"
 mkdir --parents "$MOUNT/etc/systemd/system/getty@.service.d"
 cat <<EOF >"$MOUNT/etc/systemd/system/getty@.service.d/autologin.conf"
@@ -231,6 +213,25 @@ echo "::warning::NEOVIM SYMLINKS"
 ln -s /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
 ln -s /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
 echo "::endgroup::"
+
+echo "::warning::FIRSTBOOT SERVICE"
+cat <<EOF >"$MOUNT/etc/systemd/system/firstboot.service"
+[Unit]
+Description=Custom First Boot Commands
+After=systemd-repart.service
+Before=cloud-final.service
+ConditionPathIsReadWrite=/etc
+ConditionFirstBoot=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/pacman-key --init
+ExecStart=/usr/bin/pacman-key --populate
+
+[Install]
+WantedBy=default.target
+EOF
 
 echo "::warning::ENABLE UNITS"
 systemctl --root="$MOUNT" enable "${UNITS_ENABLE[@]}"
