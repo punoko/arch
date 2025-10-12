@@ -135,6 +135,7 @@ default_kver="/boot/vmlinuz-linux"
 default_uki="/$ESP_DIR/EFI/Linux/arch.efi"
 default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp -S autodetect"
 EOF
+mkdir --parents "$MOUNT/$ESP_DIR/EFI/Linux/"
 
 echo "::warning::PACSTRAP"
 pacstrap -cGM "$MOUNT" "${PACKAGES[@]}"
