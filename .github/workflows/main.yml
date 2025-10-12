@@ -1,5 +1,5 @@
 ---
-name: Build image
+name: Build & Upload
 on:
   push:
     branches:
@@ -46,6 +46,7 @@ jobs:
 
   upload:
     name: Upload image
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Artifact
