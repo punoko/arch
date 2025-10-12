@@ -1,5 +1,5 @@
 ---
-name: Main
+name: Build image
 on:
   push:
     branches:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: Image build
+    name: Build image
     runs-on: ubuntu-latest
     container:
       image: archlinux
@@ -23,7 +23,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 📅 Get Date
+      - name: 📅 Date
         id: date
         run: echo "date=$(/bin/date -u "+%Y%m")" >> $GITHUB_OUTPUT
         shell: bash
@@ -33,17 +33,6 @@ jobs:
         with:
           path: /var/cache/pacman/pkg
           key: pacman-${{ steps.date.outputs.date }}
-
-      - name: 🧰 Dependencies
-        run: >-
-          pacman -Syu --needed --noconfirm --quiet
-          arch-install-scripts
-          btrfs-progs
-          dosfstools
-          qemu-img
-          ;
-          sed -i '/^NoExtract/d' /etc/pacman.conf
-        shell: bash
 
       - name: 🚧 Build
         run: ./build.sh
@@ -55,7 +44,7 @@ jobs:
           enable-cache: true
           version: "latest"
 
-      - name: 💿 Upload
+      - name: ☁️ Upload
         env:
           OS_AUTH_URL: ${{ secrets.OS_AUTH_URL }}
           OS_IDENTITY_API_VERSION: ${{ secrets.OS_IDENTITY_API_VERSION }}
