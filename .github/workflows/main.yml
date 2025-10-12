@@ -48,6 +48,11 @@ jobs:
     name: Upload image
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [punoko, test]
+        region: [dc3-a, dc4-a]
+    environment: ${{ matrix.environment }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -65,14 +70,13 @@ jobs:
 
       - name: ☁️ Upload
         env:
-          OS_AUTH_URL: ${{ secrets.OS_AUTH_URL }}
-          OS_IDENTITY_API_VERSION: ${{ secrets.OS_IDENTITY_API_VERSION }}
-          OS_INTERFACE: ${{ secrets.OS_INTERFACE }}
+          OS_AUTH_URL: ${{ vars.OS_AUTH_URL }}
+          OS_IDENTITY_API_VERSION: ${{ vars.OS_IDENTITY_API_VERSION }}
+          OS_INTERFACE: ${{ vars.OS_INTERFACE }}
+          OS_PROJECT_DOMAIN_NAME: ${{ vars.OS_PROJECT_DOMAIN_NAME }}
+          OS_USER_DOMAIN_NAME: ${{ vars.OS_USER_DOMAIN_NAME }}
           OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
-          OS_PROJECT_DOMAIN_NAME: ${{ secrets.OS_PROJECT_DOMAIN_NAME }}
-          OS_PROJECT_ID: ${{ secrets.OS_PROJECT_ID }}
           OS_PROJECT_NAME: ${{ secrets.OS_PROJECT_NAME }}
-          OS_REGION_NAME: ${{ secrets.OS_REGION_NAME }}
-          OS_USER_DOMAIN_NAME: ${{ secrets.OS_USER_DOMAIN_NAME }}
           OS_USERNAME: ${{ secrets.OS_USERNAME }}
+          OS_REGION_NAME: ${{ matrix.region }}
         run: uv run --quiet --no-dev upload.py image.qcow2
