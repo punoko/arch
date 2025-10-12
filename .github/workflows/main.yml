@@ -25,7 +25,7 @@ jobs:
 
       - name: 📅 Date
         id: date
-        run: echo "date=$(/bin/date -u "+%Y%m")" >> $GITHUB_OUTPUT
+        run: echo "date=$(/bin/date -u "+%Y.%m.%d")" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: 📦 Cache
@@ -37,6 +37,21 @@ jobs:
       - name: 🚧 Build
         run: ./build.sh
         shell: bash
+
+      - name: 📤 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: image.qcow2
+
+  upload:
+    name: Upload image
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: image
 
       - name: 🐍 Python
         uses: astral-sh/setup-uv@v6
@@ -56,4 +71,4 @@ jobs:
           OS_REGION_NAME: ${{ secrets.OS_REGION_NAME }}
           OS_USER_DOMAIN_NAME: ${{ secrets.OS_USER_DOMAIN_NAME }}
           OS_USERNAME: ${{ secrets.OS_USERNAME }}
-        run: uv run --quiet --no-dev upload.py
+        run: uv run --quiet --no-dev upload.py image.qcow2

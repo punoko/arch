@@ -7,8 +7,7 @@ LOCALE="C.UTF-8"
 TIMEZONE="UTC"
 
 IMG_SIZE="2G"
-IMG_FILE="punoko.img"
-QCOW_FILE="punoko.qcow2"
+IMG_FILE="image.img"
 
 # This setup makes writing fstab unnecessary because :
 #   - root partition is automatically mounted according to its GPT partition type
@@ -249,6 +248,6 @@ fstrim --verbose "$MOUNT"
 cleanup
 
 echo "::warning::CONVERT TO QCOW2"
-qemu-img convert -f raw -O qcow2 "$IMG_FILE" "$QCOW_FILE"
+qemu-img convert -f raw -O qcow2 "$IMG_FILE" "${IMG_FILE/%img/qcow2}"
 
 echo "::warning::FINISHED WITHOUT ERRORS"
