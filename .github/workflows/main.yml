@@ -25,7 +25,7 @@ jobs:
 
       - name: 📅 Date
         id: date
-        run: echo "date=$(/bin/date -u "+%Y.%m.%d")" >> $GITHUB_OUTPUT
+        run: echo "date=$(/bin/date -I)" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: 📦 Cache
