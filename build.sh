@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOSTNAME="arch"
-KEYMAP="us"
-LOCALE="C.UTF-8"
-TIMEZONE="UTC"
-
 IMG_SIZE="2G"
 IMG_FILE="image.img"
 
@@ -143,15 +138,20 @@ sed -i "s/ -S autodetect//" "$MOUNT/etc/mkinitcpio.d/linux.preset"
 echo "::warning::BOOTCTL INSTALL"
 bootctl install --root "$MOUNT" --no-variables
 
+echo "::warning::LOCALE GEN"
+cat <<EOF >"$MOUNT/etc/locale.gen"
+en_US.UTF-8 UTF-8
+EOF
+locale-gen
+
 echo "::warning::FIRSTBOOT CONFIG"
 systemd-firstboot \
     --root="$MOUNT" \
     --force \
-    --keymap="$KEYMAP" \
-    --locale="$LOCALE" \
-    --hostname="$HOSTNAME" \
-    --timezone="$TIMEZONE" \
-    --root-shell=/usr/bin/fish \
+    --keymap="us" \
+    --locale="en_US.UTF-8" \
+    --timezone="UTC" \
+    --root-shell="/usr/bin/fish" \
     ;
 
 echo "::warning::REPART CONFIG"
@@ -187,6 +187,7 @@ system_info:
 growpart:
   mode: off
 resize_rootfs: false
+locale: false
 ssh_deletekeys: false
 ssh_genkeytypes: []
 disable_root: true
