@@ -188,10 +188,11 @@ growpart:
   mode: off
 resize_rootfs: false
 locale: false
+network:
+  config: disabled
 ssh_deletekeys: false
 ssh_genkeytypes: []
-disable_root: true
-disable_root_opts: "#"
+disable_root: false
 EOF
 
 echo "::warning::CONSOLE AUTOLOGIN"
