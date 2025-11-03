@@ -74,16 +74,16 @@ cleanup() {
 }
 trap cleanup ERR
 
-echo "::warning::INSTALL BUILD DEPENDENCIES"
+echo "::notice::INSTALL BUILD DEPENDENCIES"
 sed -i '/^NoExtract/d' /etc/pacman.conf
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' "/etc/pacman.conf"
 pacman -Syu --needed --noconfirm "${BUILD_DEPENDENCIES[@]}"
 
-echo "::warning::CREATE IMAGE"
+echo "::notice::CREATE IMAGE"
 rm -f $IMG_FILE
 truncate --size $IMG_SIZE $IMG_FILE
 
-echo "::warning::CREATE PARTITIONS"
+echo "::notice::CREATE PARTITIONS"
 # Flag 59 marks the partition for automatic growing of the contained file system
 # https://uapi-group.org/specifications/specs/discoverable_partitions_specification/
 sfdisk --label gpt $IMG_FILE <<EOF
@@ -91,17 +91,17 @@ type=$ESP_GPT_TYPE,name="$ESP_LABEL",size=$ESP_SIZE
 type=$ROOT_GPT_TYPE,name="$ROOT_LABEL",attrs=59
 EOF
 
-echo "::warning::LOOP DEVICE SETUP"
+echo "::notice::LOOP DEVICE SETUP"
 LOOPDEV=$(losetup --find --partscan --show $IMG_FILE)
 PART1="$LOOPDEV"p1
 PART2="$LOOPDEV"p2
 sleep 1
 
-echo "::warning::FORMAT PARTITIONS"
+echo "::notice::FORMAT PARTITIONS"
 mkfs.vfat -F 32 -n "$ESP_LABEL" "$PART1"
 mkfs.btrfs --label "$ROOT_LABEL" "$PART2"
 
-echo "::warning::MOUNT PARTITIONS"
+echo "::notice::MOUNT PARTITIONS"
 mount "$PART2" "$MOUNT"
 btrfs subvolume create "$MOUNT/$ROOT_SUBVOL"
 btrfs subvolume set-default "$MOUNT/$ROOT_SUBVOL"
@@ -109,14 +109,14 @@ umount "$MOUNT"
 mount --options "$ROOT_FLAGS" "$PART2" "$MOUNT"
 mount --mkdir=700 "$PART1" "$MOUNT/$ESP_DIR"
 
-echo "::warning::KERNEL CMDLINE CONFIG"
+echo "::notice::KERNEL CMDLINE CONFIG"
 # Not specifying `rw` in cmdline breaks boot
 mkdir --parents "$MOUNT/etc/kernel"
 cat <<EOF >"$MOUNT/etc/kernel/cmdline"
 rootflags=$ROOT_FLAGS rw
 EOF
 
-echo "::warning::MKINITCPIO CONFIG"
+echo "::notice::MKINITCPIO CONFIG"
 mkdir --parents "$MOUNT/etc/mkinitcpio.conf.d"
 cat <<EOF >"$MOUNT/etc/mkinitcpio.conf.d/custom.conf"
 MODULES=(btrfs)
@@ -131,20 +131,20 @@ default_options="--splash /usr/share/systemd/bootctl/splash-arch.bmp -S autodete
 EOF
 mkdir --parents "$MOUNT/$ESP_DIR/EFI/Linux/"
 
-echo "::warning::PACSTRAP"
+echo "::notice::PACSTRAP"
 pacstrap -cGM "$MOUNT" "${PACKAGES[@]}"
 sed -i "s/ -S autodetect//" "$MOUNT/etc/mkinitcpio.d/linux.preset"
 
-echo "::warning::BOOTCTL INSTALL"
+echo "::notice::BOOTCTL INSTALL"
 bootctl install --root "$MOUNT" --no-variables
 
-echo "::warning::LOCALE GEN"
+echo "::notice::LOCALE GEN"
 cat <<EOF >"$MOUNT/etc/locale.gen"
 en_US.UTF-8 UTF-8
 EOF
 locale-gen
 
-echo "::warning::FIRSTBOOT CONFIG"
+echo "::notice::FIRSTBOOT CONFIG"
 systemd-firstboot \
     --root="$MOUNT" \
     --force \
@@ -154,14 +154,14 @@ systemd-firstboot \
     --root-shell="/usr/bin/fish" \
     ;
 
-echo "::warning::REPART CONFIG"
+echo "::notice::REPART CONFIG"
 mkdir --parents "$MOUNT/etc/repart.d"
 cat <<EOF >"$MOUNT/etc/repart.d/root.conf"
 [Partition]
 Type=root
 EOF
 
-echo "::warning::NETWORK CONFIG"
+echo "::notice::NETWORK CONFIG"
 ln -sf /run/systemd/resolve/stub-resolv.conf "$MOUNT/etc/resolv.conf"
 cat <<EOF >"$MOUNT/etc/systemd/network/99-ethernet.network"
 [Match]
@@ -172,13 +172,13 @@ Type=ether
 DHCP=yes
 EOF
 
-echo "::warning::SSH CONFIG"
+echo "::notice::SSH CONFIG"
 cat <<EOF >"$MOUNT/etc/ssh/sshd_config.d/custom.conf"
 PermitRootLogin no
 PasswordAuthentication no
 EOF
 
-echo "::warning::CLOUD-INIT CONFIG"
+echo "::notice::CLOUD-INIT CONFIG"
 cat <<EOF >"$MOUNT/etc/cloud/cloud.cfg.d/custom.cfg"
 system_info:
   default_user:
@@ -195,7 +195,7 @@ ssh_genkeytypes: []
 disable_root: false
 EOF
 
-echo "::warning::CONSOLE AUTOLOGIN"
+echo "::notice::CONSOLE AUTOLOGIN"
 mkdir --parents "$MOUNT/etc/systemd/system/getty@.service.d"
 cat <<EOF >"$MOUNT/etc/systemd/system/getty@.service.d/autologin.conf"
 [Service]
@@ -203,7 +203,7 @@ ExecStart=
 ExecStart=-/sbin/agetty -o '-p -f -- \\u' --autologin root --noclear %I $TERM
 EOF
 
-echo "::warning::PACMAN SETTINGS"
+echo "::notice::PACMAN SETTINGS"
 sed -i 's/^#Color/Color/' "$MOUNT/etc/pacman.conf"
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' "$MOUNT/etc/pacman.conf"
 sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' "$MOUNT/etc/pacman.conf"
@@ -211,12 +211,12 @@ cat <<EOF >"$MOUNT/etc/pacman.d/mirrorlist"
 Server = https://geo.mirror.pkgbuild.com/\$repo/os/\$arch
 EOF
 
-echo "::warning::NEOVIM SYMLINKS"
+echo "::notice::NEOVIM SYMLINKS"
 ln -s /usr/bin/nvim "$MOUNT/usr/local/bin/vim"
 ln -s /usr/bin/nvim "$MOUNT/usr/local/bin/vi"
 echo "::endgroup::"
 
-echo "::warning::FIRSTBOOT SERVICE"
+echo "::notice::FIRSTBOOT SERVICE"
 cat <<EOF >"$MOUNT/etc/systemd/system/firstboot.service"
 [Unit]
 Description=Custom First Boot Commands
@@ -235,10 +235,10 @@ ExecStart=/usr/bin/pacman-key --populate
 WantedBy=default.target
 EOF
 
-echo "::warning::ENABLE UNITS"
+echo "::notice::ENABLE UNITS"
 systemctl --root="$MOUNT" enable "${UNITS_ENABLE[@]}"
 
-echo "::warning::CLEANUP"
+echo "::notice::CLEANUP"
 # https://systemd.io/BUILDING_IMAGES/
 rm -f "$MOUNT/etc/machine-id"
 rm -f "$MOUNT/var/lib/systemd/random-seed"
@@ -249,7 +249,7 @@ fstrim --verbose "$MOUNT/$ESP_DIR"
 fstrim --verbose "$MOUNT"
 cleanup
 
-echo "::warning::CONVERT TO QCOW2"
+echo "::notice::CONVERT TO QCOW2"
 qemu-img convert -f raw -O qcow2 "$IMG_FILE" "${IMG_FILE/%img/qcow2}"
 
-echo "::warning::FINISHED WITHOUT ERRORS"
+echo "::notice::FINISHED WITHOUT ERRORS"
